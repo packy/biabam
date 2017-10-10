@@ -1,0 +1,158 @@
+#!/bin/bash
+#    BIABAM: Biabam Is A Bash Attachment Mailer
+#    Copyright (C) 2000, 2003, 2004 Mads Martin Jørgensen <mmj@mmj.dk>
+#
+#    This program is free software; you can redistribute it
+#    and/or modify it under the terms of the GNU General Public
+#    License as published by the Free Software Foundation; either
+#    version 2 of the License, or (at your option) any later
+#    version.
+#
+#    This program is distributed in the hope that it will be
+#    useful, but WITHOUT ANY WARRANTY; without even the implied
+#    warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+#    PURPOSE.  See the GNU General Public License for more
+#    details.
+#
+#    You should have received a copy of the GNU General Public
+#    License along with this program; if not, write to the Free
+#    Software Foundation, Inc., 59 Temple Place, Suite 330,
+#    Boston, MA 02111-1307 USA
+
+# change these to suit your needs
+SENDMAIL=/usr/sbin/sendmail  # your Mail-Transfer-Agent
+SENDMAIL_OPTS=               # and its required options
+SP=,  # separator for filenames and recipients (default is the comma character)
+
+# no user serviceable parts below this point
+VERSION=0.9.7
+
+if  [ $# -lt 2 ]; then
+  echo "Usage:"
+  echo "$0 filename1[${SP}filename2${SP}filenameN] [-s subject] recipient1[${SP}recipient2${SP}recipientN]"
+  exit 1
+fi
+
+if ! which uuencode > /dev/null; then
+  echo "This program needs the uuencode utility to perform base64 encoding."
+  exit 1
+fi
+
+# Find out the number of files to attach
+TOTAL_ATTACHMENTS=`echo "$1" | awk -F$SP '{print NF}'`
+
+for i in `seq 1 $TOTAL_ATTACHMENTS`;
+do
+  STR="'{print \$$i}'"
+  # store filenames in an array
+  ARR_ATTACHMENTS[$i]=`sh -c "echo "$1" | awk -F$SP $STR" `
+done
+
+if ! TEMPFILE="`mktemp /tmp/biabam.XXXXXX`"; then
+  echo "Biabam is unable to create the temporary file."
+  exit 1
+fi
+
+BASETEMP="`basename $TEMPFILE`"
+
+for i in `seq 1 $TOTAL_ATTACHMENTS`; do
+  # array for attachments basename
+  BASEATTACHMENT[$i]="`basename \"${ARR_ATTACHMENTS[$i]}\"`"
+  # test if file exists
+  if ! test -f "${ARR_ATTACHMENTS[$i]}"; then
+    echo "File \"${ARR_ATTACHMENTS[$i]}\" is not a regular file."
+    exit 1
+  fi
+  # array for temp files
+  if ! TEMPUUENCODED[$i]="`mktemp /tmp/biabam.uu.XXXXXX`"; then
+    echo "Biabam is unable to create the temporary uuencoded file."
+    exit 1
+  fi
+
+  # use 'file' to get MIME type if possible
+  TYPE[$i]="application/unknown"; # array for mime type files
+  if which file > /dev/null ; then
+    MIME=`file -bi -- "${ARR_ATTACHMENTS[$i]}"`
+    MIME=${MIME/,*;/;}
+    MIME=${MIME/%,*/}
+    TYPE[$i]=${MIME:-application/unknown}
+  fi
+
+  uuencode --base64 -- "${ARR_ATTACHMENTS[$i]}" "${BASEATTACHMENT[$i]}" | \
+  sed '1d;$d' > ${TEMPUUENCODED[$i]}
+done
+
+BOUNDARY="$BASETEMP$BASETEMP"
+
+shift 		# skip over filename
+
+# have they supplied a subject
+SUBJECT="File delivery"
+if [ a"$1" = "a-s" ]; then
+  shift
+  SUBJECT="$1"
+  shift
+fi
+
+# Find out the number of recipients to send the email
+TOTAL_EMAILS=`echo "$1" | awk -F$SP '{print NF}'`
+
+for i in `seq 1 $TOTAL_EMAILS`; do
+  STR="'{print \$$i}'"
+  # store recipients in an array
+  ARR_EMAILS[$i]=`sh -c "echo "$1" | awk -F$SP $STR" `
+done
+
+TO="To:"
+
+for i in `seq 1 $TOTAL_EMAILS`; do
+  # write the 'To:' field with all recipients previously stored in the array
+  TO="$TO <${ARR_EMAILS[$i]}>,"
+done
+
+TO=${TO:0:${#TO}-1} # remove the last comma
+
+echo $TO >> $TEMPFILE
+echo "Subject: $SUBJECT" >> $TEMPFILE
+echo "X-Mailer: BIABAM $VERSION" >> $TEMPFILE
+echo "Message-ID: <`date +%Y%m%d%H%M%S`.$BASETEMP@biabam>" >> $TEMPFILE
+echo "Mime-Version: 1.0" >> $TEMPFILE 
+echo "Content-Type: multipart/mixed; boundary=\"$BOUNDARY\"" >> $TEMPFILE
+echo "Content-Disposition: inline" >> $TEMPFILE
+echo >> $TEMPFILE
+echo >> $TEMPFILE
+echo "--$BOUNDARY" >> $TEMPFILE
+echo "Content-Type: text/plain; charset=us-ascii" >> $TEMPFILE
+echo "Content-Disposition: inline" >> $TEMPFILE
+echo >> $TEMPFILE
+test -t 0 && echo "Email body (type CTRL-d on a blank line to finish):"
+cat >> $TEMPFILE
+echo >> $TEMPFILE
+
+for i in `seq 1 $TOTAL_ATTACHMENTS`; do
+  echo "--$BOUNDARY" >> $TEMPFILE
+  echo "Content-Type: ${TYPE[$i]}" >> $TEMPFILE
+  echo "Content-Disposition: attachment; filename=\"${BASEATTACHMENT[$i]}\"" >> $TEMPFILE
+  echo "Content-Transfer-Encoding: base64" >> $TEMPFILE
+  echo >> $TEMPFILE
+  # write all uuencoded attachments files in the email source code
+  cat ${TEMPUUENCODED[$i]} >> $TEMPFILE
+  echo >> $TEMPFILE
+done
+
+echo "--$BOUNDARY--" >> $TEMPFILE
+echo >> $TEMPFILE
+
+for i in `seq 1 $TOTAL_EMAILS`; do
+  # put all recipients together to call sendmail below
+  RECIPIENTS="$RECIPIENTS ${ARR_EMAILS[$i]}"
+done
+
+cat $TEMPFILE | $SENDMAIL $SENDMAIL_OPTS $RECIPIENTS # here we call sendmail
+
+for i in `seq 1 $TOTAL_ATTACHMENTS`; do
+  /bin/rm -f ${TEMPUUENCODED[$i]} # remove all temp files created
+done
+
+/bin/rm -f $TEMPFILE # remove the email source code tempfile
+
