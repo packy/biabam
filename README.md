@@ -25,9 +25,9 @@ tropical@premium.com
 If no text is piped into biabam, it will wait for text on standard input
 (finish with CTRL-D)
 
- By default, the comma ',' character is the separator for attachments and
- recipients, but you can customize this at the beginning of the script in a
- variable named SP.
+By default, the comma `','` character is the separator for attachments and
+recipients, but you can customize this at the beginning of the script in a
+variable named SP.
 
 ### TIPS:
  - Don't use the `;` character as separator if you are calling biabam manually
@@ -37,25 +37,26 @@ If no text is piped into biabam, it will wait for text on standard input
  - The separator can be more than one character length(e.g. `'%%%'`).
 
 ### IMPORTANT:
-In order to use BIABAM you need the uuencode utility, because the script relies
-on it to do base64 encoding.
+- In order to use BIABAM you need the uuencode utility, because
+  the script relies on it to do base64 encoding.
 
-BIABAM also requires sendmail or equivalent MTA installed on the system,(for
-example qmail has a sendmail wrapper). If your MTA is not /usr/sbin/sendmail
-you will have to change the variable SENDMAIL and SENDMAIL_OPTS in the
-beginning of the biabam file.
+- BIABAM also requires sendmail or equivalent MTA installed on
+  the system (for example qmail has a sendmail wrapper). If your
+  MTA is not `/usr/sbin/sendmail` you will have to change the
+  variable SENDMAIL and SENDMAIL_OPTS in the beginning of
+  the `biabam` file.
 
-## AUTHOR
+## FORK MAINTAINER
+Packy Anderson <PackyAnderson@gmail.com>
 
-  Mads Martin Jørgensen <mmj@mmj.dk>
+## ORIGINAL AUTHOR
+Mads Martin Jørgensen <mmj@mmj.dk>
 
-## RELEASE MANAGER
-
-  Frederik Juul Christiani <frederik@christiani.dk>
+## ORIGINAL RELEASE MANAGER
+Frederik Juul Christiani <frederik@christiani.dk>
 
 ## ACKNOWLEDGEMENTS
-
-  Thanks to:
+### Thanks to:
 
   - Roman Drahtmüller <draht@suse.de>
   - Stefan Reinauer <stepan@suse.de>
@@ -67,5 +68,5 @@ beginning of the biabam file.
   - Nelson Benitez <gnelson@inMail.sk>
 
   For advice, additions and good company ;-))
-
+---
 README from source project: https://github.com/packy/biabam/blob/master/README_0.9.7.txt
