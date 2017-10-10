@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #    BIABAM: Biabam Is A Bash Attachment Mailer
 #    Copyright (C) 2000, 2003, 2004 Mads Martin J�rgensen <mmj@mmj.dk>
 #
