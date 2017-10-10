@@ -53,6 +53,15 @@ if ! TEMPFILE="`mktemp /tmp/biabam.XXXXXX`"; then
   exit 1
 fi
 
+if uuencode --base64 $TEMPFILE $(basename $TEMPFILE) > /dev/null 2>&1; then
+  UUENCODE="uuencode --base64 --"
+elif which b64encode > /dev/null 2>&1; then
+  UUENCODE="b64encode"
+else
+  echo Not sure how to base64 encode using uuencode
+  exit 1
+fi
+
 BASETEMP="`basename $TEMPFILE`"
 
 for i in `seq 1 $TOTAL_ATTACHMENTS`; do
@@ -78,7 +87,8 @@ for i in `seq 1 $TOTAL_ATTACHMENTS`; do
     TYPE[$i]=${MIME:-application/unknown}
   fi
 
-  uuencode --base64 -- "${ARR_ATTACHMENTS[$i]}" "${BASEATTACHMENT[$i]}" | \
+
+  $UUENCODE "${ARR_ATTACHMENTS[$i]}" "${BASEATTACHMENT[$i]}" | \
   sed '1d;$d' > ${TEMPUUENCODED[$i]}
 done
 
