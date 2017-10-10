@@ -2,6 +2,12 @@
 
 This is a fork of the BIABAM project on http://freecode.com/projects/biabam to enable it to work on BSD operating systems like FreeBSD and macOS.
 
+Biabam Is A Bash Attachment Mailer. In other words, BIABAM is a tool that is used for mailing attachments from the commandline. It is similar to using Mutt to send attachments on the commandline, but without the overhead of a complete email client.
+
+> Biabam is just a small tool, useful when you want to mail attachments from the commandline.
+I'm perfectly aware that Mutt has this functionality too, but I needed a commandline mailer on a system without Mutt -- hence I had to write this.
+> Mads Martin Jørgensen <mmj@mmj.dk>
+
 ---
 
 To use BIABAM use the following syntax:
